@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>🔐 لوحة تحكم المسؤول - تفعيل الاشتراكات</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #F1FAEE; padding: 2rem; direction: rtl; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #1D3557; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        th { background: #1D3557; color: white; padding: 12px; text-align: right; }
+        td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-success { background: #2A9D8F; color: white; }
+        .btn-danger { background: #E63946; color: white; }
+        .status { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .status-pending { background: #ffc107; color: #000; }
+        .status-approved { background: #2A9D8F; color: white; }
+        .status-rejected { background: #E63946; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 لوحة تفعيل الاشتراكات</h1>
+        <p id="authStatus">جاري التحقق...</p>
+        
+        <h2 style="margin-top: 2rem;">📋 طلبات الاشتراك المعلقة</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>العميل</th>
+                    <th>البريد</th>
+                    <th>المبلغ</th>
+                    <th>الإيصال</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="requestsBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const ADMIN_EMAIL = 'admin@votre-domaine.com'; // ✏️ Votre email admin
+
+        async function init() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session || session.user.email !== ADMIN_EMAIL) {
+                document.getElementById('authStatus').innerHTML = 
+                    '❌ غير مصرح. يرجى تسجيل الدخول بحساب المسؤول.';
+                return;
+            }
+            
+            document.getElementById('authStatus').innerHTML = 
+                `✅ مرحباً ${session.user.email}`;
+            
+            await loadRequests();
+        }
+
+        async function loadRequests() {
+            const { data: requests } = await supabaseClient
+                .from('payment_requests')
+                .select('*, profiles(*)')
+                .eq('status', 'pending')
+                .order('requested_at', { ascending: false });
+
+            const tbody = document.getElementById('requestsBody');
+            if (!requests || requests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">لا توجد طلبات معلقة</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = requests.map(r => `
+                <tr>
+                    <td>${new Date(r.requested_at).toLocaleDateString('ar-MA')}</td>
+                    <td>${r.profiles?.full_name || '-'}</td>
+                    <td>${r.profiles?.email || '-'}</td>
+                    <td><strong>${r.amount} ${r.currency}</strong></td>
+                    <td>
+                        ${r.payment_proof_url 
+                            ? `<a href="${r.payment_proof_url}" target="_blank" style="color: #457B9D;">📎 عرض</a>`
+                            : '<span style="color: #999;">غير مرفق</span>'}
+                    </td>
+                    <td><span class="status status-pending">معلق</span></td>
+                    <td>
+                        <button class="btn btn-success" onclick="approveRequest('${r.id}', '${r.user_id}')">✅ تفعيل</button>
+                        <button class="btn btn-danger" onclick="rejectRequest('${r.id}')">❌ رفض</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function approveRequest(requestId, userId) {
+            if (!confirm('هل تريد تفعيل الاشتراك لهذا العميل؟')) return;
+
+            const endDate = new Date();
+            endDate.setFullYear(endDate.getFullYear() + 1);
+
+            // 1. Mettre à jour la demande
+            await supabaseClient
+                .from('payment_requests')
+                .update({ 
+                    status: 'approved', 
+                    processed_at: new Date().toISOString() 
+                })
+                .eq('id', requestId);
+
+            // 2. Créer/Mettre à jour l'abonnement
+            await supabaseClient
+                .from('subscriptions')
+                .insert([{
+                    user_id: userId,
+                    plan: 'full_access',
+                    status: 'active',
+                    start_date: new Date().toISOString(),
+                    end_date: endDate.toISOString(),
+                    is_demo: false,
+                    amount: 2999
+                }]);
+
+            alert('✅ تم تفعيل الاشتراك بنجاح!');
+            await loadRequests();
+        }
+
+        async function rejectRequest(requestId) {
+            if (!confirm('هل تريد رفض هذا الطلب؟')) return;
+
+            await supabaseClient
+                .from('payment_requests')
+                .update({ 
+                    status: 'rejected', 
+                    processed_at: new Date().toISOString() 
+                })
+                .eq('id', requestId);
+
+            alert('تم رفض الطلب');
+            await loadRequests();
+        }
+
+        init();
+    </script>
+</body>
+</html>

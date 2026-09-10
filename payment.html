@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الترقية للباقة الكاملة</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-db.js"></script>
+    <script src="js/saas-manager.js"></script>
+</head>
+<body>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Vérifier auth
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = 'index.html';
+                return;
+            }
+            // Afficher la page de paiement
+            await saasManager.showPaymentPage();
+        });
+    </script>
+</body>
+</html>

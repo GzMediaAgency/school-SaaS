@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء حساب - نظام إدارة المؤسسة التكوينية</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/components.css">
+
+    <!-- SDK Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-family); }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--light-blue) 100%);
+            padding: 1rem;
+        }
+
+        .signup-container {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        .logo-container { display: flex; justify-content: center; margin-bottom: 1.25rem; }
+        .logo-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            background-color: var(--primary-blue);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .signup-title {
+            text-align: center; color: var(--primary-blue);
+            font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem;
+        }
+        .signup-subtitle {
+            text-align: center; color: var(--text-secondary);
+            font-size: 0.95rem; margin-bottom: 1.5rem;
+        }
+        .demo-badge {
+            display: block; width: fit-content; margin: 0 auto 1.5rem;
+            background: rgba(42, 157, 143, 0.1); color: var(--success-green);
+            padding: 0.4rem 1rem; border-radius: 20px;
+            font-size: 0.85rem; font-weight: 600;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-label {
+            display: block; color: var(--text-primary);
+            font-weight: 600; font-size: 0.95rem; margin-bottom: 0.4rem; text-align: right;
+        }
+        .form-input {
+            width: 100%; padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 1rem; transition: all 0.3s ease;
+            text-align: right; direction: rtl;
+        }
+        .form-input:focus {
+            outline: none; border-color: var(--light-blue);
+            box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.1);
+        }
+
+        .error-message {
+            background: #ffebee; color: var(--danger-red);
+            padding: 0.75rem 1rem; border-radius: 8px;
+            margin-bottom: 1rem; text-align: center;
+            font-size: 0.9rem; display: none;
+            border-right: 4px solid var(--danger-red);
+        }
+        .error-message.show { display: block; }
+
+        .success-message {
+            background: #e8f5e9; color: var(--success-green);
+            padding: 0.75rem 1rem; border-radius: 8px;
+            margin-bottom: 1rem; text-align: center;
+            font-size: 0.9rem; display: none;
+            border-right: 4px solid var(--success-green);
+        }
+        .success-message.show { display: block; }
+
+        .btn-signup {
+            width: 100%; padding: 0.9rem;
+            background-color: var(--success-green); color: #ffffff;
+            border: none; border-radius: 8px;
+            font-size: 1.05rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease; margin-top: 0.5rem;
+            text-align: center;
+        }
+        .btn-signup:hover { background-color: #238b7e; transform: translateY(-2px); }
+        .btn-signup:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .login-link {
+            text-align: center; color: var(--text-secondary);
+            font-size: 0.9rem; margin-top: 1.25rem;
+        }
+        .login-link a { color: var(--primary-blue); text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="logo-container">
+            <div class="logo-circle">🎓</div>
+        </div>
+        <h1 class="signup-title">إنشاء حساب جديد</h1>
+        <p class="signup-subtitle">نظام إدارة المؤسسة التكوينية</p>
+        <span class="demo-badge">🎁 تجربة مجانية لمدة 15 يوم</span>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="signupForm">
+            <div class="form-group">
+                <label class="form-label" for="orgName">اسم المؤسسة *</label>
+                <input type="text" id="orgName" class="form-input" placeholder="مثال: مركز التكوين العالي" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="fullName">الاسم الكامل *</label>
+                <input type="text" id="fullName" class="form-input" placeholder="الاسم واللقب" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="email">البريد الإلكتروني *</label>
+                <input type="email" id="email" class="form-input" placeholder="example@email.com" required dir="ltr">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="phone">رقم الهاتف</label>
+                <input type="tel" id="phone" class="form-input" placeholder="06XXXXXXXX" dir="ltr">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">كلمة المرور *</label>
+                <input type="password" id="password" class="form-input" placeholder="6 أحرف على الأقل" minlength="6" required dir="ltr">
+            </div>
+            <button type="submit" class="btn-signup" id="signupBtn">🚀 ابدأ التجربة المجانية</button>
+        </form>
+
+        <p class="login-link">
+            لديك حساب بالفعل؟
+            <a href="index.html">تسجيل الدخول</a>
+        </p>
+    </div>
+
+    <!-- Scripts de votre application -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-db.js"></script>
+    <script src="js/ui-components.js"></script>
+
+    <script>
+        // Vérification au chargement : évite la page blanche silencieuse
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof supabaseClient === 'undefined') {
+                showError('خطأ في تحميل إعدادات Supabase. تحقق من ملف js/supabase-config.js');
+                return;
+            }
+            document.getElementById('signupForm').addEventListener('submit', handleSignup);
+        });
+
+        function showError(msg) {
+            const err = document.getElementById('errorMessage');
+            err.textContent = msg;
+            err.classList.add('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+
+        function showSuccess(msg) {
+            const ok = document.getElementById('successMessage');
+            ok.textContent = msg;
+            ok.classList.add('show');
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        function translateError(message) {
+            const errors = {
+                'User already registered': 'هذا البريد الإلكتروني مستخدم بالفعل',
+                'Email already confirmed': 'هذا البريد الإلكتروني مستخدم بالفعل',
+                'Password should be at least 6 characters': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+                'Invalid email': 'البريد الإلكتروني غير صالح',
+                'Rate limit exceeded': 'محاولات كثيرة جداً، انتظر قليلاً ثم أعد المحاولة'
+            };
+            return errors[message] || message || 'حدث خطأ غير متوقع';
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+
+            const data = {
+                orgName: document.getElementById('orgName').value.trim(),
+                fullName: document.getElementById('fullName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                password: document.getElementById('password').value
+            };
+
+            const btn = document.getElementById('signupBtn');
+            btn.disabled = true;
+            btn.textContent = 'جاري إنشاء الحساب...';
+
+            try {
+                // 1. Créer le compte dans Supabase Auth
+                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                    email: data.email,
+                    password: data.password,
+                    options: {
+                        data: { full_name: data.fullName, org_name: data.orgName }
+                    }
+                });
+
+                if (authError) throw authError;
+                if (!authData.user) {
+                    showSuccess('تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتفعيله ثم سجل الدخول.');
+                    setTimeout(() => window.location.href = 'index.html', 4000);
+                    return;
+                }
+
+                const userId = authData.user.id;
+
+                // 2. Créer l'abonnement démo 15 jours (si absent)
+                const { data: existingSub } = await supabaseClient
+                    .from('subscriptions')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .limit(1);
+
+                let endDate = new Date();
+                endDate.setDate(endDate.getDate() + 15);
+
+                if (!existingSub || existingSub.length === 0) {
+                    await supabaseClient.from('subscriptions').insert([{
+                        user_id: userId,
+                        plan: 'demo',
+                        status: 'active',
+                        start_date: new Date().toISOString(),
+                        end_date: endDate.toISOString(),
+                        is_demo: true,
+                        amount: 0
+                    }]);
+                }
+
+                // 3. Compléter le profil (nom, institution, téléphone)
+                await supabaseClient
+                    .from('profiles')
+                    .update({
+                        org_name: data.orgName,
+                        full_name: data.fullName,
+                        phone: data.phone
+                    })
+                    .eq('id', userId);
+
+                // 4. Données de départ (classes + matières) si disponible
+                if (window.db && typeof db.generateSeedData === 'function') {
+                    await db.generateSeedData(userId);
+                }
+
+                // 5. Redirection
+                if (authData.session) {
+                    // Confirmation email désactivée → connexion directe
+                    sessionStorage.setItem('currentUser', JSON.stringify({
+                        uid: userId,
+                        email: data.email,
+                        full_name: data.fullName,
+                        org_name: data.orgName,
+                        role: 'admin',
+                        subscription: {
+                            plan: 'demo',
+                            status: 'active',
+                            is_demo: true,
+                            end_date: endDate.toISOString()
+                        }
+                    }));
+                    window.location.href = 'dashboard.html';
+                } else {
+                    // Confirmation email activée
+                    showSuccess('تم إنشاء الحساب بنجاح! تحقق من بريدك الإلكتروني لتفعيل الحساب ثم سجل الدخول.');
+                    setTimeout(() => window.location.href = 'index.html', 4000);
+                }
+
+            } catch (err) {
+                console.error('Erreur inscription:', err);
+                showError(translateError(err.message));
+                btn.disabled = false;
+                btn.textContent = '🚀 ابدأ التجربة المجانية';
+            }
+        }
+    </script>
+</body>
+</html>
