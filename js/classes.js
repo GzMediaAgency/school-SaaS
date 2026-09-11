@@ -147,7 +147,7 @@ class ClassesManager {
 
         // 🔒 ÉTAPE 5 : Vérifier la limite pour un nouveau فصل
         if (!id) {
-            const allowed = await saasManager.enforceLimit('classes', 'الفصول');
+            const allowed = await window.enforceLimitSafe('classes', 'الفصول');
             if (!allowed) return;
         }
 

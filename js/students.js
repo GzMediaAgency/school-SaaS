@@ -231,7 +231,7 @@ render() {
 
         // 🔒 ÉTAPE 5 : Vérifier la limite UNIQUEMENT pour un nouvel ajout
         if (!id) {
-            const allowed = await saasManager.enforceLimit('students', 'الطلاب');
+            const allowed = await window.enforceLimitSafe('students', 'الطلاب');
             if (!allowed) return; // ⛔ Bloqué → arrêt de la fonction
         }
 

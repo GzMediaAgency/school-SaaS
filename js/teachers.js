@@ -259,7 +259,7 @@ class TeachersManager {
 
         // 🔒 ÉTAPE 5 : Vérifier la limite pour un nouvel professeur
         if (!id) {
-            const allowed = await saasManager.enforceLimit('teachers', 'الأساتذة');
+            const allowed = await window.enforceLimitSafe('teachers', 'الأساتذة');
             if (!allowed) return;
         }
 
