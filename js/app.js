@@ -104,17 +104,27 @@ async setupSubscriptionAlert() {
     }
 
     setupSidebar() {
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', async (e) => {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            const page = item.dataset.page;
+            const href = item.getAttribute('href');
+
+            // 🔗 رابط خارجي (مثل payment.html) بدون data-page :
+            // نترك المتصفح ينتقل بشكل طبيعي
+            if (!page) {
+                if (href && href !== '#') return; // ✅ لا preventDefault
                 e.preventDefault();
-                navItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                const page = item.dataset.page;
-                await this.navigateTo(page);
-            });
+                return;
+            }
+
+            e.preventDefault();
+            navItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            this.navigateTo(page);
         });
-    }
+    });
+}
 
     setupHeaderActions() {
         // Menu mobile
@@ -227,6 +237,17 @@ async setupSubscriptionAlert() {
                     contentArea.innerHTML = '<p style="color: red;">Error: aiHelper not loaded</p>';
                 }
                 break;
+		    case 'settings':
+                if (window.settingsManager) {
+                    settingsManager.render();
+                } else {
+                    contentArea.innerHTML = '<p style="color: red;">Error: settingsManager not loaded</p>';
+                }
+                break;
+            case 'payment':
+            case 'upgrade':
+                    window.location.href = 'payment.html';
+                return;
             default:
                 contentArea.innerHTML = `<p>الصفحة غير موجودة: ${page}</p>`;
         }
