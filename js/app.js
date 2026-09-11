@@ -1,45 +1,28 @@
 // js/app.js
 let app; // Définition globale
 
-document.addEventListener('DOMContentLoaded', async function() {
-    // Vérifier l'authentification via Supabase
+document.addEventListener('DOMContentLoaded', async function () {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    
-    if (!session) {
-        window.location.href = 'index.html';
-        return;
-    }
+    if (!session) { window.location.href = 'index.html'; return; }
 
-    // Récupérer les données utilisateur depuis Supabase
-    const { data: profile } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+    // ✅ تحميل كل البيانات في الذاكرة المؤقتة قبل عرض أي صفحة
+    await db.loadAll(session.user.id);
 
-    const { data: subscription } = await supabaseClient
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single();
+    const { data: profile } = await supabaseClient.from('profiles')
+        .select('*').eq('id', session.user.id).single();
+    const { data: subscription } = await supabaseClient.from('subscriptions')
+        .select('*').eq('user_id', session.user.id)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
 
-    // Stocker en session
     sessionStorage.setItem('currentUser', JSON.stringify({
-        uid: session.user.id,
-        ...profile,
-        subscription: subscription
+        uid: session.user.id, ...profile, subscription
     }));
 
-    // Mettre à jour l'ID utilisateur dans le wrapper DB
-    db.userId = session.user.id;
-
-    // Mettre à jour l'affichage
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar');
     if (userName && profile) userName.textContent = profile.full_name;
     if (userAvatar && profile) userAvatar.textContent = profile.full_name.charAt(0);
 
-    // Initialiser l'application
     app = new AppManager();
 });
 
@@ -148,10 +131,10 @@ async setupSubscriptionAlert() {
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
-                if (confirm('هل تريد تسجيل الخروج؟')) {
-                    await db.logout();
-                    window.location.href = 'index.html';
-                }
+        if (confirm('هل تريد تسجيل الخروج؟')) {
+            await db.logout();
+            window.location.href = 'index.html';
+        }
             });
         }
 
@@ -241,7 +224,7 @@ async setupSubscriptionAlert() {
                 if (window.settingsManager) {
                     settingsManager.render();
                 } else {
-                    contentArea.innerHTML = '<p style="color: red;">Error: settingsManager not loaded</p>';
+                    contentArea.innerHTML = '<p style="color: red;">Error: settings.js not loaded — أضف السكريبت في dashboard.html</p>';
                 }
                 break;
             case 'payment':
