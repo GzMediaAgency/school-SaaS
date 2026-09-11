@@ -1,77 +1,158 @@
 // js/settings.js
 class SettingsManager {
-constructor() {
-this.contentArea = document.getElementById('contentArea');
-this.pendingLogo = undefined; // undefined = pas de changement, null = suppression, string = nouveau logo
-}
-render() {
-     document.querySelector('.header-title').textContent = 'الإعدادات';
-     const settings = db.getSettings();
-     this.pendingLogo = undefined;
-     this.contentArea.innerHTML = `
-         <div class="card" style="max-width: 600px; padding: 1.5rem;">
-             <h3 style="margin-bottom: 1.25rem;">بيانات المؤسسة (تظهر في أعلى المستندات المصدّرة)</h3>
-             <div class="form-group">
-                 <label class="form-label">اسم المؤسسة</label>
-                 <input type="text" id="settingsSchoolName" class="form-input" value="${settings.schoolName || ''}">
-             </div>
-             <div class="form-group">
-                 <label class="form-label">شعار / ترويسة المؤسسة</label>
-                 <div id="logoPreviewWrap" style="margin-bottom: 0.75rem; ${settings.schoolLogo ? '' : 'display:none;'}">
-                     <img id="logoPreview" src="${settings.schoolLogo || ''}" style="max-height: 90px; max-width: 100%; border: 1px solid rgba(0,0,0,0.1); border-radius: var(--border-radius); padding: 0.5rem; background: #fff;">
-                 </div>
-                 <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                     <input type="file" id="settingsLogoInput" accept="image/*" class="form-input" style="max-width: 320px;">
-                     <button type="button" class="btn btn-outline" id="removeLogoBtn" style="${settings.schoolLogo ? '' : 'display:none;'}">🗑️ حذف الشعار</button>
-                 </div>
-                 <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">يفضل صورة بعرض معقول (أقل من 500 كيلوبايت) بصيغة PNG أو JPG.</p>
-             </div>
-             <button class="btn btn-success" id="saveSettingsBtn" style="margin-top: 0.5rem;">حفظ الإعدادات</button>
-         </div>
-     `;
-     this.attachEvents();
- }
- attachEvents() {
-     const fileInput = document.getElementById('settingsLogoInput');
-     fileInput.addEventListener('change', (e) => {
-         const file = e.target.files[0];
-         if (!file) return;
-         if (file.size > 800 * 1024) {
-             ui.showToast('الصورة كبيرة نوعاً ما، يفضل اختيار صورة أصغر من 500 كيلوبايت', 'error');
-         }
-         const reader = new FileReader();
-         reader.onload = (ev) => {
-             this.pendingLogo = ev.target.result; // data URL base64
-             const previewWrap = document.getElementById('logoPreviewWrap');
-             const preview = document.getElementById('logoPreview');
-             preview.src = this.pendingLogo;
-             previewWrap.style.display = '';
-             document.getElementById('removeLogoBtn').style.display = '';
-         };
-         reader.readAsDataURL(file);
-     });
+    constructor() {
+        this.contentArea = document.getElementById('contentArea');
+    }
 
-     document.getElementById('removeLogoBtn').addEventListener('click', () => {
-         this.pendingLogo = null; // marquer pour suppression
-         document.getElementById('logoPreviewWrap').style.display = 'none';
-         document.getElementById('removeLogoBtn').style.display = 'none';
-         fileInput.value = '';
-     });
+    async render() {
+        document.querySelector('.header-title').textContent = 'الإعدادات';
+        const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
 
-     document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-         const updates = {
-             schoolName: document.getElementById('settingsSchoolName').value.trim() || 'المؤسسة التكوينية'
-         };
-         if (this.pendingLogo !== undefined) {
-             updates.schoolLogo = this.pendingLogo; // string (نجاح) أو null (حذف)
-         }
-         db.updateSettings(updates);
-         if (typeof app !== 'undefined' && app && typeof app.updateSidebarSchoolName === 'function') {
-             app.updateSidebarSchoolName();
-         }
-         ui.showToast('تم حفظ الإعدادات بنجاح', 'success');
-         this.render();
-     });
- }
+        // جلب أحدث بيانات الملف الشخصي
+        let profile = user;
+        try {
+            const { data } = await supabaseClient
+                .from('profiles').select('*')
+                .eq('id', user.uid).single();
+            if (data) profile = data;
+        } catch (e) { console.error(e); }
+
+        // جلب معلومات الاشتراك
+        let sub = user.subscription || null;
+        let days = 0;
+        if (window.saasManager) {
+            sub = await saasManager.getCurrentSubscription();
+            days = await saasManager.getDaysRemaining();
+        }
+
+        const planName = sub ? (sub.plan === 'full_access' ? 'الباقة الكاملة' : 'نسخة تجريبية') : 'غير معروف';
+        const subStatus = (sub && sub.status === 'active' && days > 0)
+            ? '<span class="badge badge-success">نشط</span>'
+            : '<span class="badge badge-danger">منتهي</span>';
+
+        this.contentArea.innerHTML = `
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+                <!-- معلومات المؤسسة -->
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem;">🏫 معلومات المؤسسة</h3>
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label class="form-label">اسم المؤسسة</label>
+                            <input type="text" id="setOrgName" class="form-input" value="${profile.org_name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">اسم المدير</label>
+                            <input type="text" id="setFullName" class="form-input" value="${profile.full_name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="tel" id="setPhone" class="form-input" value="${profile.phone || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-input" value="${profile.email || ''}" disabled style="background:#f0f0f0;">
+                        </div>
+                        <button type="submit" class="btn btn-success" style="width:100%; justify-content:center;">حفظ التغييرات</button>
+                    </form>
+                </div>
+
+                <!-- الاشتراك -->
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem;">💎 الاشتراك</h3>
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid #eee;">
+                        <span>الباقة الحالية</span><strong>${planName}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid #eee;">
+                        <span>الحالة</span>${subStatus}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid #eee;">
+                        <span>الأيام المتبقية</span><strong>${days} يوم</strong>
+                    </div>
+                    ${sub && sub.end_date ? `
+                    <div style="display:flex; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid #eee;">
+                        <span>تاريخ الانتهاء</span><strong>${new Date(sub.end_date).toLocaleDateString('ar-MA')}</strong>
+                    </div>` : ''}
+                    <a href="payment.html" class="btn btn-success" style="width:100%; margin-top:1.5rem; justify-content:center;">
+                        ${sub && sub.plan === 'full_access' ? 'تجديد الاشتراك' : '⬆ الترقية للباقة الكاملة (2999 درهم/سنة)'}
+                    </a>
+                </div>
+
+                <!-- الأمان -->
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem;">🔐 الأمان</h3>
+                    <form id="passwordForm">
+                        <div class="form-group">
+                            <label class="form-label">كلمة المرور الجديدة</label>
+                            <input type="password" id="newPassword" class="form-input" minlength="6" required placeholder="6 أحرف على الأقل">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">تأكيد كلمة المرور</label>
+                            <input type="password" id="confirmPassword" class="form-input" minlength="6" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">تغيير كلمة المرور</button>
+                    </form>
+                    <button id="logoutAllBtn" class="btn btn-danger" style="width:100%; margin-top:1rem; justify-content:center;">🚪 تسجيل الخروج</button>
+                </div>
+            </div>
+        `;
+
+        this.attachEvents();
+    }
+
+    attachEvents() {
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.saveProfile();
+        });
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.changePassword();
+        });
+        document.getElementById('logoutAllBtn').addEventListener('click', async () => {
+            if (confirm('هل تريد تسجيل الخروج؟')) {
+                await supabaseClient.auth.signOut();
+                sessionStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            }
+        });
+    }
+
+    async saveProfile() {
+        const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+        const data = {
+            org_name: document.getElementById('setOrgName').value.trim(),
+            full_name: document.getElementById('setFullName').value.trim(),
+            phone: document.getElementById('setPhone').value.trim()
+        };
+        const { error } = await supabaseClient.from('profiles').update(data).eq('id', user.uid);
+        if (error) {
+            ui.showToast('حدث خطأ أثناء الحفظ: ' + error.message, 'error');
+            return;
+        }
+        const updated = { ...user, ...data };
+        sessionStorage.setItem('currentUser', JSON.stringify(updated));
+        const userName = document.getElementById('userName');
+        const userAvatar = document.getElementById('userAvatar');
+        if (userName) userName.textContent = data.full_name;
+        if (userAvatar) userAvatar.textContent = data.full_name.charAt(0);
+        ui.showToast('تم حفظ التغييرات بنجاح', 'success');
+    }
+
+    async changePassword() {
+        const newPass = document.getElementById('newPassword').value;
+        const confirmPass = document.getElementById('confirmPassword').value;
+        if (newPass !== confirmPass) {
+            ui.showToast('كلمتا المرور غير متطابقتين', 'error');
+            return;
+        }
+        const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+        if (error) {
+            ui.showToast('حدث خطأ: ' + error.message, 'error');
+            return;
+        }
+        ui.showToast('تم تغيير كلمة المرور بنجاح', 'success');
+        document.getElementById('passwordForm').reset();
+    }
 }
+
 window.settingsManager = new SettingsManager();
