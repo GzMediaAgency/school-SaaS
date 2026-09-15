@@ -3,6 +3,7 @@ class SchedulesManager {
     constructor() {
         this.contentArea = document.getElementById('contentArea');
         this.selectedClass = 'all';
+        // لأسبوع يبدأ بالأحد غيّر هذا السطر فقط : ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس']
         this.dayNames = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
         this.timeSlots = [
             { period: 'am', start: '08:00', end: '09:00' },
@@ -16,12 +17,9 @@ class SchedulesManager {
         ];
     }
 
-    timeSlotValue(slot) {
-        return `${slot.start}-${slot.end}`;
-    }
+    timeSlotValue(slot) { return `${slot.start}-${slot.end}`; }
 
-    // ✅ render() devient async
-    async render() {
+    render() {
         document.querySelector('.header-title').textContent = 'الجداول الدراسية';
         this.contentArea.innerHTML = `
             <div class="card" style="padding: 0.75rem 1.25rem; margin-bottom: 0.75rem;">
@@ -34,15 +32,17 @@ class SchedulesManager {
                 </div>
             </div>
             <div class="card" style="padding: 1rem;">
-                <table id="scheduleTable" style="width: 100%; table-layout: fixed;">
-                    <thead>
-                        <tr>
-                            <th style="width: 9%; background: var(--bg-primary); padding: 0.4rem; font-size: 0.8rem;">التوقيت</th>
-                            ${this.dayNames.map(d => `<th style="background: var(--bg-primary); padding: 0.4rem; font-size: 0.8rem;">${d}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody id="scheduleTableBody"></tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table id="scheduleTable" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="width: 9%; background: var(--bg-primary); padding: 0.4rem; font-size: 0.8rem; border: 1px solid #e0e0e0;">التوقيت</th>
+                                ${this.dayNames.map(d => `<th style="background: var(--bg-primary); padding: 0.4rem; font-size: 0.8rem; border: 1px solid #e0e0e0;">${d}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody"></tbody>
+                    </table>
+                </div>
                 <p style="text-align: center; color: var(--text-secondary); font-size: 0.75rem; padding: 0.5rem 0 0; margin: 0;">
                     اضغط على أي خانة فارغة لإضافة حصة، أو على حصة موجودة لتعديلها.
                 </p>
@@ -74,8 +74,8 @@ class SchedulesManager {
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">القاعة *</label>
-                            <input type="text" id="scheduleRoom" class="form-input" required placeholder="مثال: قاعة 101">
+                            <label class="form-label">القاعة (اختياري)</label>
+                            <input type="text" id="scheduleRoom" class="form-input" placeholder="مثال: قاعة 101">
                         </div>
                         <div style="display: flex; gap: 1rem; justify-content: space-between; margin-top: 1.5rem;">
                             <button type="button" class="btn btn-danger" id="scheduleDeleteBtn" style="display: none;">حذف الحصة</button>
@@ -88,15 +88,15 @@ class SchedulesManager {
                 </div>
             </div>
         `;
-        await this.loadClassesFilter();
-        await this.loadSchedule();
+        this.loadClassesFilter();
+        this.loadSchedule();
         this.attachEvents();
     }
 
-    // ✅ async
-    async loadClassesFilter() {
-        const classes = await db.getData('classes');
+    loadClassesFilter() {
+        const classes = db.getData('classes');
         const select = document.getElementById('scheduleClassFilter');
+        select.innerHTML = '<option value="all">جميع الفصول</option>';
         classes.forEach(cls => {
             const opt = document.createElement('option');
             opt.value = cls.id;
@@ -105,59 +105,46 @@ class SchedulesManager {
         });
     }
 
-    // ✅ async
-    async loadSchedule() {
-        const schedules = await db.getData('schedules');
-        const classes = await db.getData('classes');
-        const teachers = await db.getData('teachers');
-        const subjects = await db.getData('subjects');
-        
-        let filteredSchedules = schedules;
+    loadSchedule() {
+        const schedules = db.getData('schedules');
+        const classes = db.getData('classes');
+        const teachers = db.getData('teachers');
+        const subjects = db.getData('subjects');
+        let filtered = schedules;
         if (this.selectedClass !== 'all') {
-            filteredSchedules = schedules.filter(s => s.class_id === this.selectedClass);
+            filtered = schedules.filter(s => (s.classId || s.class_id) === this.selectedClass);
         }
-
         const tbody = document.getElementById('scheduleTableBody');
         let html = '';
         let lastPeriod = null;
 
         this.timeSlots.forEach(slot => {
             if (lastPeriod === 'am' && slot.period === 'pm') {
-                html += `<tr><td colspan="${this.dayNames.length + 1}" style="background: var(--bg-primary); text-align: center; font-weight: bold; color: var(--text-secondary); padding: 0.3rem; font-size: 0.75rem;">— الفترة المسائية —</td></tr>`;
+                html += `<tr><td colspan="${this.dayNames.length + 1}" style="background: var(--bg-primary); text-align: center; font-weight: bold; color: var(--text-secondary); padding: 0.4rem; font-size: 0.8rem; border: 1px solid #e0e0e0;">— الفترة المسائية —</td></tr>`;
             }
             lastPeriod = slot.period;
             const timeValue = this.timeSlotValue(slot);
-            
-            html += `<tr><td style="background: var(--bg-primary); text-align: center; padding: 0.35rem;">
+            html += `<tr><td style="background: var(--bg-primary); text-align: center; padding: 0.35rem; border: 1px solid #e0e0e0;">
                 <div style="font-weight: 700; color: var(--text-primary); font-size: 0.8rem; line-height: 1.2;">${slot.start}</div>
                 <div style="color: var(--text-secondary); font-size: 0.7rem; line-height: 1.2;">${slot.end}</div>
             </td>`;
-
             this.dayNames.forEach((dayName, day) => {
-                const match = filteredSchedules.find(s => s.day == day && s.time_slot === timeValue);
+                const match = filtered.find(s => String(s.day) === String(day) && (s.timeSlot || s.time_slot) === timeValue);
                 if (match) {
-                    const cls = classes.find(c => c.id === match.class_id);
-                    const teacher = cls ? teachers.find(t => t.id === cls.teacher_id) : null;
-                    const subject = cls ? subjects.find(sub => sub.id === cls.subject) : null;
-                    
+                    const cls = classes.find(c => c.id === (match.classId || match.class_id));
+                    const teacher = cls ? teachers.find(t => t.id === (cls.teacherId || cls.teacher_id)) : null;
+                    const subject = subjects.find(sb => sb.id === (match.subjectId || match.subject_id || (cls && (cls.subjectId || cls.subject))));
                     html += `
-                        <td style="background: rgba(69, 123, 157, 0.1); position: relative; padding: 0.3rem; cursor: pointer; overflow: hidden;"
+                        <td style="background: rgba(69,123,157,0.1); position: relative; padding: 0.3rem; cursor: pointer; overflow: hidden; border: 1px solid #e0e0e0;"
                             onclick="schedulesManager.editSchedule('${match.id}')">
-                            <div style="font-weight: bold; color: var(--primary-blue); font-size: 0.72rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                ${subject ? subject.name : (cls ? cls.name : 'غير محدد')}
-                            </div>
-                            <div style="font-size: 0.65rem; color: var(--text-secondary); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                ${teacher ? teacher.full_name : 'غير محدد'}
-                            </div>
-                            <div style="font-size: 0.6rem; color: var(--text-secondary); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                 ${match.room}
-                            </div>
+                            <div style="font-weight: bold; color: var(--primary-blue); font-size: 0.72rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${subject ? subject.name : (cls ? cls.name : 'غير محدد')}</div>
+                            <div style="font-size: 0.65rem; color: var(--text-secondary); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${teacher ? (teacher.fullName || teacher.full_name) : 'غير محدد'}</div>
+                            <div style="font-size: 0.6rem; color: var(--text-secondary); line-height: 1.2;">${match.room || ''}</div>
                             <button onclick="event.stopPropagation(); schedulesManager.deleteSchedule('${match.id}')"
                                     style="position: absolute; top: 1px; left: 1px; background: var(--danger-red); color: white; border: none; border-radius: 50%; width: 14px; height: 14px; cursor: pointer; font-size: 0.6rem; line-height: 1; padding: 0;">×</button>
-                        </td>
-                    `;
+                        </td>`;
                 } else {
-                    html += `<td style="background: var(--bg-white); cursor: pointer; padding: 0.3rem;"
+                    html += `<td style="background: var(--bg-white); cursor: pointer; padding: 0.3rem; border: 1px solid #e0e0e0; min-height: 50px;"
                         onclick="schedulesManager.showAddModal('${day}', '${timeValue}')"></td>`;
                 }
             });
@@ -171,23 +158,19 @@ class SchedulesManager {
             this.selectedClass = e.target.value;
             this.loadSchedule();
         });
-        document.getElementById('addScheduleBtn').addEventListener('click', () => {
-            this.showAddModal();
-        });
-        // ✅ async dans le submit
-        document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+        document.getElementById('addScheduleBtn').addEventListener('click', () => this.showAddModal());
+        document.getElementById('scheduleForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            await this.saveSchedule();
+            this.saveSchedule();
         });
-        document.getElementById('scheduleDeleteBtn').addEventListener('click', async () => {
+        document.getElementById('scheduleDeleteBtn').addEventListener('click', () => {
             const id = document.getElementById('scheduleId').value;
-            if (id) await this.deleteSchedule(id, true);
+            if (id) this.deleteSchedule(id, true);
         });
     }
 
-    // ✅ async
-    async populateClassSelect() {
-        const classes = await db.getData('classes');
+    populateClassSelect() {
+        const classes = db.getData('classes');
         const select = document.getElementById('scheduleClass');
         select.innerHTML = '<option value="">-- اختر الفصل --</option>';
         classes.forEach(cls => {
@@ -198,109 +181,73 @@ class SchedulesManager {
         });
     }
 
-    // ✅ async
-    async showAddModal(day = null, timeValue = null) {
+    showAddModal(day = null, timeValue = null) {
         document.getElementById('scheduleModalTitle').textContent = 'إضافة حصة دراسية';
         document.getElementById('scheduleForm').reset();
         document.getElementById('scheduleId').value = '';
         document.getElementById('scheduleDeleteBtn').style.display = 'none';
-        
-        await this.populateClassSelect();
-        
-        if (this.selectedClass !== 'all') {
-            document.getElementById('scheduleClass').value = this.selectedClass;
-        }
-        if (day !== null) {
-            document.getElementById('scheduleDay').value = day;
-        }
-        if (timeValue !== null) {
-            document.getElementById('scheduleTimeSlot').value = timeValue;
-        }
+        this.populateClassSelect();
+        if (this.selectedClass !== 'all') document.getElementById('scheduleClass').value = this.selectedClass;
+        if (day !== null) document.getElementById('scheduleDay').value = day;
+        if (timeValue !== null) document.getElementById('scheduleTimeSlot').value = timeValue;
         ui.openModal('scheduleModal');
     }
 
-    // ✅ async
-    async editSchedule(id) {
-        const schedule = await db.findItem('schedules', s => s.id === id);
+    editSchedule(id) {
+        const schedule = db.findItem('schedules', s => s.id === id);
         if (!schedule) return;
-        
         document.getElementById('scheduleModalTitle').textContent = 'تعديل الحصة';
-        await this.populateClassSelect();
-        
+        this.populateClassSelect();
         document.getElementById('scheduleId').value = schedule.id;
-        document.getElementById('scheduleClass').value = schedule.class_id;
+        document.getElementById('scheduleClass').value = schedule.classId || schedule.class_id;
         document.getElementById('scheduleDay').value = schedule.day;
-        document.getElementById('scheduleTimeSlot').value = schedule.time_slot;
-        document.getElementById('scheduleRoom').value = schedule.room;
+        document.getElementById('scheduleTimeSlot').value = schedule.timeSlot || schedule.time_slot;
+        document.getElementById('scheduleRoom').value = schedule.room || '';
         document.getElementById('scheduleDeleteBtn').style.display = 'inline-flex';
-        
         ui.openModal('scheduleModal');
     }
 
-    // ✅ async
-    async saveSchedule() {
+    saveSchedule() {
         const id = document.getElementById('scheduleId').value;
         const data = {
-            class_id: document.getElementById('scheduleClass').value,
+            classId: document.getElementById('scheduleClass').value,
             day: document.getElementById('scheduleDay').value,
-            time_slot: document.getElementById('scheduleTimeSlot').value,
+            timeSlot: document.getElementById('scheduleTimeSlot').value,
             room: document.getElementById('scheduleRoom').value.trim()
         };
-
-        if (!data.class_id || !data.time_slot || !data.room) {
+        if (!data.classId || !data.timeSlot) {
             ui.showToast('يرجى ملء جميع الحقول', 'error');
             return;
         }
-
-        // Vérifier les conflits
-        const sameSlot = (await db.getData('schedules')).filter(s =>
-            s.day === data.day && s.time_slot === data.time_slot && s.id !== id
+        const sameSlot = db.getData('schedules').filter(s =>
+            String(s.day) === String(data.day) && (s.timeSlot || s.time_slot) === data.timeSlot && s.id !== id
         );
-
-        const classConflict = sameSlot.find(s => s.class_id === data.class_id);
-        if (classConflict) {
+        if (sameSlot.find(s => (s.classId || s.class_id) === data.classId)) {
             ui.showToast('يوجد حصة أخرى في نفس الوقت لهذا الفصل', 'error');
             return;
         }
-
-        const roomConflict = sameSlot.find(s => s.room.trim() === data.room);
-        if (roomConflict) {
+        if (data.room && sameSlot.find(s => (s.room || '').trim() === data.room)) {
             ui.showToast('هذه القاعة محجوزة لفصل آخر في نفس الوقت', 'error');
             return;
         }
-
-        const classes = await db.getData('classes');
-        const currentClass = classes.find(c => c.id === data.class_id);
-        if (currentClass && currentClass.teacher_id) {
-            const teacherConflict = sameSlot.find(s => {
-                const otherClass = classes.find(c => c.id === s.class_id);
-                return otherClass && otherClass.teacher_id === currentClass.teacher_id;
-            });
-            if (teacherConflict) {
-                ui.showToast('الأستاذ المسؤول عن هذا الفصل مبرمج في حصة أخرى بنفس التوقيت', 'error');
-                return;
-            }
-        }
-
         if (id) {
-            await db.updateItem('schedules', id, data);
+            db.updateItem('schedules', id, data);
             ui.showToast('تم تحديث الحصة بنجاح', 'success');
         } else {
-            await db.addItem('schedules', data);
+            db.addItem('schedules', data);
             ui.showToast('تم إضافة الحصة بنجاح', 'success');
         }
         ui.closeModal('scheduleModal');
-        await this.loadSchedule();
+        this.loadSchedule();
     }
 
-    // ✅ async
     async deleteSchedule(id, fromModal = false) {
         const confirmed = await ui.confirmDelete('هل تريد حذف هذه الحصة؟');
         if (confirmed) {
-            await db.deleteItem('schedules', id);
+            db.deleteItem('schedules', id);
             ui.showToast('تم حذف الحصة بنجاح', 'success');
             if (fromModal) ui.closeModal('scheduleModal');
-            await this.loadSchedule();
+            this.loadSchedule();
         }
     }
 }
