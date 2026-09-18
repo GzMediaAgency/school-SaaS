@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الترقية إلى الباقة الكاملة - نظام إدارة المؤسسة التكوينية</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-primary);
+            font-family: var(--font-family);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .pay-hero {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--light-blue) 100%);
+            color: var(--text-white);
+            padding: 3rem 1.5rem 5rem;
+            text-align: center;
+        }
+
+        .pay-hero h1 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+        }
+
+        .pay-hero p {
+            opacity: 0.9;
+            font-size: 1.05rem;
+        }
+
+        .pay-wrap {
+            max-width: 760px;
+            margin: -3.5rem auto 3rem;
+            padding: 0 1.25rem;
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .pay-card {
+            background: var(--bg-white);
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 12px 32px rgba(29, 53, 87, 0.12);
+            padding: 2rem;
+        }
+
+        .plan-head {
+            text-align: center;
+            border-bottom: 1px solid #eceff3;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .plan-badge {
+            display: inline-block;
+            background: rgba(42, 157, 143, 0.12);
+            color: var(--success-green);
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            margin-bottom: 0.9rem;
+        }
+
+        .plan-head h2 { font-size: 1.5rem; margin-bottom: 0.4rem; }
+        .plan-head .plan-sub { color: var(--text-secondary); font-size: 0.95rem; }
+
+        .plan-price {
+            margin-top: 1.25rem;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .plan-price .amount {
+            font-size: 3.2rem;
+            font-weight: 900;
+            color: var(--primary-blue);
+            line-height: 1;
+        }
+
+        .plan-price .unit { color: var(--text-secondary); font-size: 1rem; }
+
+        .features {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.85rem 1.25rem;
+        }
+
+        .features li {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.97rem;
+        }
+
+        .features .tick {
+            width: 22px; height: 22px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--success-green);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+        }
+
+        .step { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+        .step:last-child { margin-bottom: 0; }
+
+        .step-num {
+            width: 32px; height: 32px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .step-body { flex: 1; }
+        .step-body h4 { font-size: 1rem; margin-bottom: 0.6rem; font-weight: 700; }
+
+        .bank-box {
+            background: var(--bg-primary);
+            border: 1px dashed var(--light-blue);
+            border-radius: var(--border-radius);
+            padding: 1rem 1.15rem;
+            display: grid;
+            gap: 0.55rem;
+        }
+
+        .bank-row { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: 0.95rem; }
+        .bank-row span:first-child { color: var(--text-secondary); }
+        .bank-row span:last-child { font-weight: 700; }
+
+        .rib {
+            font-family: 'Courier New', monospace;
+            direction: ltr;
+            text-align: left;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--light-blue);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .contact-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+        .contact-btn {
+            flex: 1;
+            min-width: 180px;
+            text-decoration: none;
+            text-align: center;
+            padding: 0.85rem 1rem;
+            border-radius: var(--border-radius);
+            font-weight: 700;
+            color: #fff;
+            transition: var(--transition);
+        }
+
+        .contact-btn.mail { background: var(--light-blue); }
+        .contact-btn.wa { background: #25D366; }
+        .contact-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+        .field-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+        .field-row input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e2e6eb;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            font-family: var(--font-family);
+        }
+
+        .field-row input:focus {
+            outline: none;
+            border-color: var(--light-blue);
+        }
+
+        .btn-main {
+            padding: 0.8rem 1.4rem;
+            background: var(--success-green);
+            color: #fff;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-family: var(--font-family);
+            transition: var(--transition);
+        }
+
+        .btn-main:hover { background: #238b7e; }
+
+        .hint { color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.6rem; }
+
+        .activation-card { border-top: 4px solid var(--success-green); }
+
+        .status-pill {
+            display: inline-block;
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            background: rgba(29, 53, 87, 0.08);
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+        }
+
+        .result-msg {
+            margin-top: 0.9rem;
+            padding: 0.8rem 1rem;
+            border-radius: var(--border-radius);
+            font-size: 0.93rem;
+            display: none;
+        }
+
+        .result-msg.ok { display: block; background: rgba(42, 157, 143, 0.12); color: var(--success-green); }
+        .result-msg.ko { display: block; background: rgba(230, 57, 70, 0.1); color: var(--danger-red); }
+
+        .back-link {
+            display: inline-block;
+            margin: 0 auto 2.5rem;
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .back-wrap { text-align: center; }
+
+        @media (max-width: 600px) {
+            .pay-hero h1 { font-size: 1.6rem; }
+            .features { grid-template-columns: 1fr; }
+            .pay-card { padding: 1.5rem 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="pay-hero">
+        <h1>💎 الترقية إلى الباقة الكاملة</h1>
+        <p>اشتراك سنوي واحد — كل الميزات بدون حدود</p>
+    </header>
+
+    <div class="pay-wrap">
+        <section class="pay-card">
+            <div class="plan-head">
+                <span class="plan-badge">الباقة الكاملة — Full Access</span>
+                <h2>طلاب، أساتذة، فصول وتقارير بدون حدود</h2>
+                <p class="plan-sub" id="currentStatus"></p>
+                <div class="plan-price">
+                    <span class="amount">2999</span>
+                    <span class="unit">درهم / سنة</span>
+                </div>
+            </div>
+
+            <ul class="features">
+                <li><span class="tick">✓</span> طلاب غير محدودين</li>
+                <li><span class="tick">✓</span> أساتذة ومواد غير محدودة</li>
+                <li><span class="tick">✓</span> فصول وجداول غير محدودة</li>
+                <li><span class="tick">✓</span> تقارير وإحصائيات كاملة</li>
+                <li><span class="tick">✓</span> تصدير وطباعة بدون حدود</li>
+                <li><span class="tick">✓</span> نسخ احتياطي للبيانات</li>
+                <li><span class="tick">✓</span> دعم بالأولوية عبر واتساب</li>
+                <li><span class="tick">✓</span> تحديثات مجانية طوال السنة</li>
+            </ul>
+        </section>
+
+        <section class="pay-card">
+            <h3 class="section-title">📋 خطوات الدفع</h3>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <h4>حوّل مبلغ 2999 درهم إلى الحساب التالي</h4>
+                    <div class="bank-box">
+                        <div class="bank-row"><span>البنك</span><span>CIH Banque</span></div>
+                        <div class="bank-row"><span>صاحب الحساب</span><span>Soufiane GZINIT</span></div>
+                        <div class="bank-row">
+                            <span>RIB</span>
+                            <span class="rib" id="ribValue">230 041 545 848 621 102 2800 82</span>
+                        </div>
+                        <div class="bank-row">
+                            <span></span>
+                            <button class="copy-btn" id="copyRib">نسخ رقم الحساب</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <h4>أرسل صورة إيصال التحويل</h4>
+                    <div class="contact-grid">
+                        <a class="contact-btn mail" href="mailto:gz.app.media@gmail.com?subject=إيصال%20دفع%20-%20ترقية%20الاشتراك">📧 بريد إلكتروني</a>
+                        <a class="contact-btn wa" href="https://wa.me/212671752151" target="_blank" rel="noopener">💬 واتساب</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <h4>أو أرسل طلب الترقية مباشرة من هنا</h4>
+                    <div class="field-row">
+                        <input type="text" id="institutionName" placeholder="اسم المؤسسة">
+                        <input type="text" id="receiptLink" placeholder="رابط الإيصال أو رقم الهاتف">
+                        <button class="btn-main" id="sendRequest">📤 إرسال طلب الترقية</button>
+                    </div>
+                    <p class="hint">يفتح واتساب برسالة جاهزة تتضمن معطياتك. تصلك رمز التفعيل بعد التحقق من التحويل.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="pay-card activation-card">
+            <span class="status-pill" id="statusPill">—</span>
+            <h3 class="section-title">🔑 تفعيل الاشتراك</h3>
+            <p class="hint" style="margin-top:0; margin-bottom:1rem;">أدخل رمز التفعيل الذي وصلك بعد الدفع (مثال : MOAS-XXXX-XXXX-XXXX).</p>
+            <div class="field-row">
+                <input type="text" id="licenseKey" placeholder="MOAS-XXXX-XXXX-XXXX" style="direction: ltr; text-align: left; letter-spacing: 1px;">
+                <button class="btn-main" id="activateBtn">تفعيل الآن</button>
+            </div>
+            <div class="result-msg" id="activationResult"></div>
+        </section>
+
+        <div class="back-wrap">
+            <a class="back-link" href="dashboard.html">← العودة إلى لوحة التحكم</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/ui-components.js"></script>
+    <script src="js/subscription.js"></script>
+    <script>
+        const WHATSAPP_NUMBER = '212671752151';
+
+        function refreshStatus() {
+            document.getElementById('statusPill').textContent = 'الحالة الحالية : ' + subscription.statusLabel();
+            const sub = document.getElementById('currentStatus');
+            sub.textContent = subscription.isFull()
+                ? 'اشتراكك مفعّل — شكراً لثقتك.'
+                : 'أنت حالياً على النسخة التجريبية المحدودة.';
+        }
+
+        document.getElementById('copyRib').addEventListener('click', () => {
+            const rib = document.getElementById('ribValue').textContent.trim();
+            navigator.clipboard.writeText(rib).then(() => {
+                if (window.ui) ui.showToast('تم نسخ رقم الحساب', 'success');
+            });
+        });
+
+        document.getElementById('sendRequest').addEventListener('click', () => {
+            const name = document.getElementById('institutionName').value.trim();
+            const link = document.getElementById('receiptLink').value.trim();
+            if (!name || !link) {
+                if (window.ui) ui.showToast('يرجى ملء اسم المؤسسة ورابط الإيصال', 'error');
+                return;
+            }
+            const text = `طلب ترقية إلى الباقة الكاملة%0Aالمؤسسة : ${name}%0Aالإيصال : ${link}%0Aالمبلغ : 2999 درهم`;
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
+        });
+
+        document.getElementById('activateBtn').addEventListener('click', () => {
+            const key = document.getElementById('licenseKey').value;
+            const result = subscription.activate(key);
+            const box = document.getElementById('activationResult');
+            box.className = 'result-msg ' + (result.ok ? 'ok' : 'ko');
+            box.textContent = result.message;
+            if (result.ok) {
+                refreshStatus();
+                setTimeout(() => window.location.href = 'dashboard.html', 1800);
+            }
+        });
+
+        (async () => {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await db.ready;
+            refreshStatus();
+        })();
+    </script>
+</body>
+</html>

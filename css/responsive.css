@@ -1,0 +1,134 @@
+/* css/responsive.css */
+
+/* الشاشات المتوسطة */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .content-area {
+        padding: var(--spacing-lg);
+    }
+}
+
+/* الشاشات الصغيرة */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-right: 0;
+    }
+    
+    .header {
+        padding: var(--spacing-md);
+    }
+    
+    .header-title {
+        font-size: var(--font-size-lg);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: var(--spacing-lg);
+    }
+    
+    .card {
+        padding: var(--spacing-lg);
+    }
+    
+    .content-area {
+        padding: var(--spacing-md);
+    }
+    
+    .user-profile span {
+        display: none;
+    }
+    
+    .notification-bell {
+        font-size: var(--font-size-lg);
+    }
+    
+    table {
+        font-size: var(--font-size-sm);
+    }
+    
+    th, td {
+        padding: var(--spacing-sm);
+    }
+    
+    canvas {
+        max-width: 100%;
+        height: auto !important;
+    }
+}
+
+/* الشاشات الصغيرة جداً */
+@media (max-width: 480px) {
+    .header-actions {
+        gap: var(--spacing-sm);
+    }
+    
+    .btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-sm);
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: var(--font-size-xl);
+    }
+    
+    .stat-value {
+        font-size: var(--font-size-xl);
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: var(--spacing-md);
+    }
+    
+    .toast {
+        min-width: 250px;
+    }
+}
+
+/* الشاشات الكبيرة */
+@media (min-width: 1400px) {
+    .content-area {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+}
+
+/* طباعة */
+@media print {
+    .sidebar,
+    .header,
+    .menu-toggle,
+    .notification-bell {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin: 0;
+    }
+    
+    .content-area {
+        padding: 0;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}

@@ -1,0 +1,78 @@
+/* css/variables.css */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+
+:root {
+    /* الألوان الأساسية */
+    --primary-blue: #1D3557;
+    --light-blue: #457B9D;
+    --success-green: #2A9D8F;
+    --danger-red: #E63946;
+    
+    /* ألوان الخلفية */
+    --bg-primary: #F1FAEE;
+    --bg-white: #FFFFFF;
+    --bg-sidebar: #1D3557;
+    
+    /* ألوان النصوص */
+    --text-primary: #1D3557;
+    --text-secondary: #6C757D;
+    --text-white: #FFFFFF;
+    
+    /* الظلال */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
+    
+    /* الحدود */
+    --border-radius: 8px;
+    --border-radius-sm: 4px;
+    --border-radius-lg: 12px;
+    
+    /* المسافات */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* الخطوط */
+    --font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.5rem;
+    --font-size-2xl: 2rem;
+    --font-size-3xl: 2.5rem;
+    
+    /* الانتقالات */
+    --transition: all 0.3s ease;
+}
+
+* {
+    font-family: var(--font-family);
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+}
+
+h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+}
+
+h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+}
+
+h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
+p, span, label, td, th, input, select, textarea, button {
+    font-family: var(--font-family);
+}
