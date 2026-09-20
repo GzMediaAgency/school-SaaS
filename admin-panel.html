@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة متابعة العملاء - خاص بالمزوّد</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-primary);
+            font-family: var(--font-family);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--bg-sidebar);
+            color: #fff;
+            padding: 1.25rem 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        header h1 { font-size: 1.25rem; }
+        header .sub { font-size: 0.85rem; opacity: 0.75; }
+
+        main { max-width: 1200px; margin: 0 auto; padding: 1.75rem; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .stat-card {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: 1.1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+            border-right: 4px solid var(--primary-blue);
+        }
+
+        .stat-card .num { font-size: 1.7rem; font-weight: 800; }
+        .stat-card .label { color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.2rem; }
+
+        .stat-card.trial { border-right-color: #C9A227; }
+        .stat-card.full { border-right-color: var(--success-green); }
+        .stat-card.soon { border-right-color: #F4A261; }
+        .stat-card.expired { border-right-color: var(--danger-red); }
+
+        .toolbar {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .toolbar input {
+            flex: 1;
+            min-width: 220px;
+            padding: 0.65rem 1rem;
+            border: 2px solid #e2e6eb;
+            border-radius: var(--border-radius);
+            font-family: var(--font-family);
+        }
+
+        .filter-btn {
+            padding: 0.55rem 1rem;
+            border-radius: 999px;
+            border: 2px solid #e2e6eb;
+            background: #fff;
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-blue);
+            border-color: var(--primary-blue);
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            font-size: 0.9rem;
+        }
+
+        th, td { padding: 0.75rem 1rem; text-align: right; border-bottom: 1px solid #eef1f4; }
+        th { background: var(--bg-sidebar); color: #fff; font-weight: 700; }
+        tbody tr:hover { background: #f8fafb; }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .badge.trial { background: rgba(201, 162, 39, 0.15); color: #9c7f1e; }
+        .badge.full { background: rgba(42, 157, 143, 0.15); color: var(--success-green); }
+        .badge.soon { background: rgba(244, 162, 97, 0.18); color: #b5651d; }
+        .badge.expired { background: rgba(230, 57, 70, 0.12); color: var(--danger-red); }
+
+        .row-action {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: var(--border-radius);
+            background: var(--success-green);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: var(--font-family);
+        }
+
+        .row-action:hover { background: #238b7e; }
+        .row-action.secondary { background: var(--danger-red); }
+        .row-action.secondary:hover { background: #c62633; }
+
+        .empty-state, .denied {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+
+        .denied h2 { color: var(--danger-red); margin-bottom: 0.5rem; }
+
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            background: #1D3557;
+            color: #fff;
+            padding: 0.75rem 1.1rem;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .toast.error { background: var(--danger-red); }
+        .toast.success { background: var(--success-green); }
+
+        @media (max-width: 700px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            tr { margin-bottom: 1rem; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+            td { border-bottom: none; display: flex; justify-content: space-between; gap: 1rem; }
+            td::before { content: attr(data-label); font-weight: 700; color: var(--text-secondary); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>📊 لوحة متابعة العملاء</h1>
+            <div class="sub">نظام إدارة المؤسسة التكوينية — خاص بالمزوّد</div>
+        </div>
+        <button class="row-action secondary" id="logoutBtn" style="display:none;">تسجيل الخروج</button>
+    </header>
+
+    <main id="mainContent">
+        <div class="empty-state" id="loadingState">جارٍ التحميل...</div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script>
+        let allClients = [];
+        let currentFilter = 'all';
+
+        function showToast(message, type = 'info') {
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function daysLeft(dateStr) {
+            if (!dateStr) return null;
+            return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
+        }
+
+        function statusOf(client) {
+            if (client.plan === 'full') {
+                if (!client.expires_at) return 'full';
+                return new Date(client.expires_at) > new Date() ? 'full' : 'expired';
+            }
+            const end = new Date(client.trial_start);
+            end.setDate(end.getDate() + 15);
+            return end > new Date() ? 'trial' : 'expired';
+        }
+
+        function renderStats() {
+            const total = allClients.length;
+            const trial = allClients.filter(c => statusOf(c) === 'trial').length;
+            const full = allClients.filter(c => statusOf(c) === 'full').length;
+            const expired = allClients.filter(c => statusOf(c) === 'expired').length;
+            const soon = allClients.filter(c => {
+                const s = statusOf(c);
+                if (s === 'expired') return false;
+                const ref = c.plan === 'full' ? c.expires_at : (() => {
+                    const d = new Date(c.trial_start); d.setDate(d.getDate() + 15); return d;
+                })();
+                const dl = daysLeft(ref);
+                return dl !== null && dl <= 3;
+            }).length;
+
+            document.getElementById('statsRow').innerHTML = `
+                <div class="stat-card"><div class="num">${total}</div><div class="label">إجمالي العملاء</div></div>
+                <div class="stat-card trial"><div class="num">${trial}</div><div class="label">تجريبي نشط</div></div>
+                <div class="stat-card full"><div class="num">${full}</div><div class="label">باقة كاملة</div></div>
+                <div class="stat-card soon"><div class="num">${soon}</div><div class="label">ينتهي خلال 3 أيام</div></div>
+                <div class="stat-card expired"><div class="num">${expired}</div><div class="label">منتهي</div></div>
+            `;
+        }
+
+        function badgeHtml(status) {
+            const map = {
+                trial: ['trial', 'تجريبي'],
+                full: ['full', 'باقة كاملة'],
+                expired: ['expired', 'منتهي']
+            };
+            const [cls, label] = map[status];
+            return `<span class="badge ${cls}">${label}</span>`;
+        }
+
+        function renderTable() {
+            const search = document.getElementById('searchInput').value.trim().toLowerCase();
+            let rows = allClients.filter(c => {
+                const status = statusOf(c);
+                if (currentFilter !== 'all' && status !== currentFilter) return false;
+                if (!search) return true;
+                return (c.school_name || '').toLowerCase().includes(search) || (c.email || '').toLowerCase().includes(search);
+            });
+
+            const tableWrap = document.getElementById('tableWrap');
+            if (rows.length === 0) {
+                tableWrap.innerHTML = '<div class="empty-state">لا يوجد عملاء مطابقون</div>';
+                return;
+            }
+
+            tableWrap.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>المؤسسة</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>رمز التفعيل</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(c => {
+                            const status = statusOf(c);
+                            const expiry = c.plan === 'full' ? c.expires_at : (() => {
+                                const d = new Date(c.trial_start); d.setDate(d.getDate() + 15); return d.toISOString();
+                            })();
+                            return `
+                                <tr>
+                                    <td data-label="المؤسسة">${c.school_name || '—'}</td>
+                                    <td data-label="البريد الإلكتروني">${c.email || '—'}</td>
+                                    <td data-label="الحالة">${badgeHtml(status)}</td>
+                                    <td data-label="تاريخ الانتهاء">${expiry ? new Date(expiry).toLocaleDateString('ar-MA') : '—'}</td>
+                                    <td data-label="رمز التفعيل">${c.license_key || '—'}</td>
+                                    <td data-label="إجراء">
+                                        ${status !== 'full'
+                                            ? `<button class="row-action" data-activate="${c.user_id}">تفعيل الباقة الكاملة</button>`
+                                            : `<button class="row-action secondary" data-revoke="${c.user_id}">إلغاء التفعيل</button>`}
+                                    </td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            tableWrap.querySelectorAll('[data-activate]').forEach(btn => {
+                btn.addEventListener('click', () => activateClient(btn.dataset.activate));
+            });
+            tableWrap.querySelectorAll('[data-revoke]').forEach(btn => {
+                btn.addEventListener('click', () => revokeClient(btn.dataset.revoke));
+            });
+        }
+
+        async function activateClient(userId) {
+            const now = new Date();
+            const expires = new Date(now);
+            expires.setFullYear(expires.getFullYear() + 1);
+
+            const { error } = await sb.from('settings').update({
+                plan: 'full',
+                activated_at: now.toISOString(),
+                expires_at: expires.toISOString(),
+                license_key: 'MANUAL-ADMIN'
+            }).eq('user_id', userId);
+
+            if (error) {
+                showToast('فشل التفعيل : ' + error.message, 'error');
+                return;
+            }
+            showToast('تم تفعيل الباقة الكاملة بنجاح', 'success');
+            await loadClients();
+        }
+
+        async function revokeClient(userId) {
+            if (!confirm('هل تريد إلغاء الباقة الكاملة لهذا العميل وإعادته للوضع التجريبي؟')) return;
+
+            const { error } = await sb.from('settings').update({
+                plan: 'trial',
+                activated_at: null,
+                expires_at: null,
+                license_key: null
+            }).eq('user_id', userId);
+
+            if (error) {
+                showToast('فشل الإلغاء : ' + error.message, 'error');
+                return;
+            }
+            showToast('تم إلغاء التفعيل', 'success');
+            await loadClients();
+        }
+
+        async function loadClients() {
+            const { data, error } = await sb.from('settings').select('*').order('created_at', { ascending: false });
+            if (error) {
+                showToast('تعذّر تحميل قائمة العملاء : ' + error.message, 'error');
+                return;
+            }
+            allClients = data || [];
+            renderStats();
+            renderTable();
+        }
+
+        document.getElementById('searchInput')?.addEventListener('input', renderTable);
+
+        function buildLayout() {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="stats" id="statsRow"></div>
+                <div class="toolbar">
+                    <input type="text" id="searchInput" placeholder="بحث بالاسم أو البريد الإلكتروني...">
+                    <button class="filter-btn active" data-filter="all">الكل</button>
+                    <button class="filter-btn" data-filter="trial">تجريبي</button>
+                    <button class="filter-btn" data-filter="full">باقة كاملة</button>
+                    <button class="filter-btn" data-filter="expired">منتهي</button>
+                </div>
+                <div id="tableWrap"></div>
+            `;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    renderTable();
+                });
+            });
+            document.getElementById('searchInput').addEventListener('input', renderTable);
+        }
+
+        (async () => {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const { data: mySettings } = await sb.from('settings').select('is_admin').eq('user_id', session.user.id).maybeSingle();
+
+            if (!mySettings || !mySettings.is_admin) {
+                document.getElementById('mainContent').innerHTML = `
+                    <div class="denied">
+                        <h2>🔒 الوصول مرفوض</h2>
+                        <p>هذه الصفحة مخصصة لحساب المزوّد فقط.</p>
+                    </div>`;
+                return;
+            }
+
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                sb.auth.signOut().then(() => window.location.href = 'index.html');
+            });
+
+            buildLayout();
+            await loadClients();
+        })();
+    </script>
+</body>
+</html>
