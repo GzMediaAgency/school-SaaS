@@ -9,7 +9,7 @@
 // دفعة واحدة عند بدء التشغيل (db.ready)، وكل عملية كتابة تُحدّث الذاكرة فوراً
 // ثم تُرسَل إلى Supabase في الخلفية.
 
-const DB_COLLECTIONS = ['students', 'teachers', 'subjects', 'classes', 'schedules', 'attendance', 'grades', 'finance'];
+const DB_COLLECTIONS = ['students', 'teachers', 'subjects', 'classes', 'schedules', 'attendance', 'grades', 'finance', 'payments'];
 
 const DEFAULT_SETTINGS = {
     schoolName: 'المؤسسة التكوينية',

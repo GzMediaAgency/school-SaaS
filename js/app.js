@@ -185,6 +185,14 @@ class AppManager {
                 }
                 break;
                 
+            case 'payments':
+                if (window.paymentsManager) {
+                    paymentsManager.render();
+                } else {
+                    contentArea.innerHTML = '<p style="color: red;">Error: paymentsManager not loaded</p>';
+                }
+                break;
+                
             case 'finance':
                 if (window.financeManager) {
                     financeManager.render();
