@@ -2,40 +2,27 @@
 class FinanceManager {
 constructor() {
 this.contentArea = document.getElementById('contentArea');
+this.selectedMonth = ''; // '' = كل الأشهر
+}
+monthLabel(month) {
+    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'ماي', 'يونيو', 'يوليوز', 'غشت', 'شتنبر', 'أكتوبر', 'نونبر', 'دجنبر'];
+    const [year, m] = month.split('-').map(Number);
+    return `${monthNames[m - 1]} ${year}`;
+}
+getFilteredFinance() {
+    const finance = db.getData('finance').sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (!this.selectedMonth) return finance;
+    return finance.filter(f => (f.date || '').slice(0, 7) === this.selectedMonth);
 }
 render() {
      document.querySelector('.header-title').textContent = 'الإدارة المالية';
-     const finance = db.getData('finance');
-     const totalIncome = finance.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
-     const totalExpense = finance.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
-     const balance = totalIncome - totalExpense;
      this.contentArea.innerHTML = `
-         <div class="stats-grid" style="margin-bottom: 2rem;">
-             <div class="stat-card">
-                 <div class="stat-icon green">💰</div>
-                 <div class="stat-info">
-                     <h3>إجمالي المداخيل</h3>
-                     <div class="stat-value" style="color: var(--success-green);">${ui.formatNumber(totalIncome)} درهم</div>
-                 </div>
-             </div>
-             <div class="stat-card">
-                 <div class="stat-icon red">💸</div>
-                 <div class="stat-info">
-                     <h3>إجمالي المصاريف</h3>
-                     <div class="stat-value" style="color: var(--danger-red);">${ui.formatNumber(totalExpense)} درهم</div>
-                 </div>
-             </div>
-             <div class="stat-card">
-                 <div class="stat-icon blue">📊</div>
-                 <div class="stat-info">
-                     <h3>الرصيد الحالي</h3>
-                     <div class="stat-value" style="color: ${balance >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${ui.formatNumber(balance)} درهم</div>
-                 </div>
-             </div>
-         </div>
-         <div class="table-header" style="background: transparent; padding: 0; margin-bottom: 1.5rem; border: none; box-shadow: none;">
-             <h2 style="color: var(--text-primary);">سجل الحركات المالية</h2>
-             <div style="display: flex; gap: 0.75rem;">
+         <div class="stats-grid" style="margin-bottom: 2rem;" id="financeStatsGrid"></div>
+         <div class="table-header" style="background: transparent; padding: 0; margin-bottom: 1.5rem; border: none; box-shadow: none; flex-wrap: wrap; gap: 0.75rem;">
+             <h2 style="color: var(--text-primary);" id="financeTableTitle">سجل الحركات المالية</h2>
+             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                 <input type="month" id="financeMonthFilter" class="form-input" style="max-width: 180px;">
+                 <button class="btn btn-outline" id="clearFinanceMonthBtn">كل الأشهر</button>
                  <button class="btn btn-outline" id="exportFinancePdfBtn">🖨️ تصدير PDF</button>
                  <button class="btn btn-success" id="addFinanceBtn">+ إضافة حركة جديدة</button>
              </div>
@@ -94,12 +81,52 @@ render() {
              </div>
          </div>
      `;
-     this.loadFinance();
+     document.getElementById('financeMonthFilter').value = this.selectedMonth;
+     this.refresh();
      this.attachEvents();
  }
- loadFinance() {
-     const finance = db.getData('finance').sort((a, b) => new Date(b.date) - new Date(a.date));
+ refresh() {
+     const finance = this.getFilteredFinance();
+     const totalIncome = finance.filter(f => f.type === 'income').reduce((sum, f) => sum + Number(f.amount), 0);
+     const totalExpense = finance.filter(f => f.type === 'expense').reduce((sum, f) => sum + Number(f.amount), 0);
+     const balance = totalIncome - totalExpense;
+
+     document.getElementById('financeStatsGrid').innerHTML = `
+         <div class="stat-card">
+             <div class="stat-icon green">💰</div>
+             <div class="stat-info">
+                 <h3>إجمالي المداخيل</h3>
+                 <div class="stat-value" style="color: var(--success-green);">${ui.formatNumber(totalIncome)} درهم</div>
+             </div>
+         </div>
+         <div class="stat-card">
+             <div class="stat-icon red">💸</div>
+             <div class="stat-info">
+                 <h3>إجمالي المصاريف</h3>
+                 <div class="stat-value" style="color: var(--danger-red);">${ui.formatNumber(totalExpense)} درهم</div>
+             </div>
+         </div>
+         <div class="stat-card">
+             <div class="stat-icon blue">📊</div>
+             <div class="stat-info">
+                 <h3>الرصيد الحالي</h3>
+                 <div class="stat-value" style="color: ${balance >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${ui.formatNumber(balance)} درهم</div>
+             </div>
+         </div>
+     `;
+
+     document.getElementById('financeTableTitle').textContent = this.selectedMonth
+         ? `سجل الحركات المالية لشهر ${this.monthLabel(this.selectedMonth)}`
+         : 'سجل الحركات المالية';
+
+     this.loadFinance(finance);
+ }
+ loadFinance(finance) {
      const tbody = document.getElementById('financeTableBody');
+     if (finance.length === 0) {
+         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">لا توجد حركات مالية ${this.selectedMonth ? 'لهذا الشهر' : ''}</td></tr>`;
+         return;
+     }
      tbody.innerHTML = finance.map((f, index) => `
          <tr>
              <td>${index + 1}</td>
@@ -127,6 +154,15 @@ render() {
          ui.openModal('financeModal');
      });
      document.getElementById('exportFinancePdfBtn').addEventListener('click', () => this.exportFinancePDF());
+     document.getElementById('financeMonthFilter').addEventListener('change', (e) => {
+         this.selectedMonth = e.target.value;
+         this.refresh();
+     });
+     document.getElementById('clearFinanceMonthBtn').addEventListener('click', () => {
+         this.selectedMonth = '';
+         document.getElementById('financeMonthFilter').value = '';
+         this.refresh();
+     });
      document.getElementById('financeForm').addEventListener('submit', (e) => {
          e.preventDefault();
          this.saveFinance();
@@ -147,18 +183,18 @@ render() {
      db.addItem('finance', data);
      ui.showToast('تم إضافة الحركة المالية بنجاح', 'success');
      ui.closeModal('financeModal');
-     this.render();
+     this.refresh();
  }
  async deleteFinance(id) {
      const confirmed = await ui.confirmDelete('هل أنت متأكد من حذف هذه الحركة المالية؟');
      if (confirmed) {
          db.deleteItem('finance', id);
          ui.showToast('تم حذف الحركة المالية بنجاح', 'success');
-         this.render();
+         this.refresh();
      }
  }
  getFinanceRowsForExport() {
-     const finance = db.getData('finance').sort((a, b) => new Date(b.date) - new Date(a.date));
+     const finance = this.getFilteredFinance();
      const headers = ['النوع', 'الفئة', 'المبلغ', 'الوصف', 'التاريخ'];
      const rows = finance.map(f => [
          f.type === 'income' ? 'دخل' : 'مصروف', f.category, `${ui.formatNumber(f.amount)} درهم`, f.description || '-', f.date
@@ -179,7 +215,10 @@ render() {
          ui.showToast('لا توجد حركات مالية لتصديرها', 'error');
          return;
      }
-     ui.printTable('سجل الحركات المالية', headers, rows, summaryRow);
+     const title = this.selectedMonth
+         ? `سجل الحركات المالية لشهر ${this.monthLabel(this.selectedMonth)}`
+         : 'سجل الحركات المالية';
+     ui.printTable(title, headers, rows, summaryRow);
  }
 }
 window.financeManager = new FinanceManager();
