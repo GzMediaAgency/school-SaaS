@@ -18,7 +18,8 @@ const DEFAULT_SETTINGS = {
     trialStart: null,
     activatedAt: null,
     expiresAt: null,
-    licenseKey: null
+    licenseKey: null,
+    isAdmin: false
 };
 
 class SupabaseDB {
@@ -77,12 +78,42 @@ class SupabaseDB {
             trialStart: row.trial_start,
             activatedAt: row.activated_at,
             expiresAt: row.expires_at,
-            licenseKey: row.license_key
+            licenseKey: row.license_key,
+            isAdmin: !!row.is_admin
         };
+    }
+
+    // إعادة قراءة صف الإعدادات من الخادم (بعد التفعيل مثلاً)
+    async reloadSettings() {
+        const { data } = await sb.from('settings').select('*').eq('user_id', this.userId).maybeSingle();
+        if (data) this.settings = this._settingsRowToObj(data);
+        return this.settings;
+    }
+
+    // وضع القراءة فقط : الاشتراك منتهٍ (نفس منطق js/subscription.js)
+    _writeAllowed() {
+        const sub = window.subscription;
+        if (sub && typeof sub.isExpired === 'function' && sub.isExpired()) {
+            this._notifyReadOnly();
+            return false;
+        }
+        return true;
+    }
+
+    _notifyReadOnly() {
+        if (window.ui && typeof ui.showToast === 'function') {
+            ui.showToast('الحساب في وضع القراءة فقط لانتهاء الاشتراك. فعّل الباقة الكاملة لاستئناف الإضافة والتعديل والحذف.', 'error', 5000);
+        }
     }
 
     _notifyError(message) {
         console.error(message);
+        if (/row-level security|permission denied/i.test(String(message))) {
+            // الخادم رفض الكتابة : الاشتراك منتهٍ. نعيد مزامنة الذاكرة مع الحقيقة ونُعلم المستخدم
+            this._notifyReadOnly();
+            this.refreshAll().catch(() => {});
+            return;
+        }
         if (window.ui && typeof ui.showToast === 'function') {
             ui.showToast('تعذّر حفظ التغيير في الخادم، تحقّق من اتصالك بالإنترنت', 'error');
         }
@@ -103,6 +134,7 @@ class SupabaseDB {
 
     // ---------- كتابة (متفائلة : تُحدّث الذاكرة فوراً ثم تُزامن في الخلفية) ----------
     addItem(collection, item) {
+        if (!this._writeAllowed()) return item;
         item.id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString() + Math.random();
         this.cache[collection].push(item);
 
@@ -114,6 +146,7 @@ class SupabaseDB {
     }
 
     updateItem(collection, id, updates) {
+        if (!this._writeAllowed()) return null;
         const data = this.cache[collection];
         const index = data.findIndex(item => item.id === id);
         if (index === -1) return null;
@@ -129,6 +162,7 @@ class SupabaseDB {
     }
 
     deleteItem(collection, id) {
+        if (!this._writeAllowed()) return;
         this.cache[collection] = this.cache[collection].filter(item => item.id !== id);
 
         sb.from(collection).delete().eq('id', id).then(({ error }) => {
@@ -138,6 +172,7 @@ class SupabaseDB {
 
     // استبدال دفعة كاملة (تُستعمل في attendance.js و grades.js للحفظ الجماعي)
     setData(collection, newArray) {
+        if (!this._writeAllowed()) return this.cache[collection];
         const oldArray = this.cache[collection] || [];
         this.cache[collection] = newArray;
 
