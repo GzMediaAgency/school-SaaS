@@ -388,10 +388,17 @@
             window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
         });
 
-        document.getElementById('activateBtn').addEventListener('click', () => {
+        document.getElementById('activateBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('activateBtn');
             const key = document.getElementById('licenseKey').value;
-            const result = subscription.activate(key);
             const box = document.getElementById('activationResult');
+
+            btn.disabled = true;
+            btn.textContent = 'جارٍ التحقق...';
+            const result = await subscription.activate(key);
+            btn.disabled = false;
+            btn.textContent = 'تفعيل الآن';
+
             box.className = 'result-msg ' + (result.ok ? 'ok' : 'ko');
             box.textContent = result.message;
             if (result.ok) {
