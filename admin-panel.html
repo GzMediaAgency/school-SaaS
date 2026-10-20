@@ -163,6 +163,33 @@
         .toast.error { background: var(--danger-red); }
         .toast.success { background: var(--success-green); }
 
+        .license-box {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border-right: 4px solid var(--success-green);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .license-hint { color: var(--text-secondary); font-size: 0.85rem; flex: 1; min-width: 220px; }
+        #licenseResult { width: 100%; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+        #licenseResult .code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            direction: ltr;
+            color: var(--success-green);
+            background: var(--bg-primary);
+            padding: 0.4rem 0.9rem;
+            border-radius: var(--border-radius);
+            user-select: all;
+        }
+
         @media (max-width: 700px) {
             table, thead, tbody, th, td, tr { display: block; }
             thead { display: none; }
@@ -368,6 +395,11 @@
         function buildLayout() {
             document.getElementById('mainContent').innerHTML = `
                 <div class="stats" id="statsRow"></div>
+                <div class="license-box">
+                    <button class="row-action" id="genLicenseBtn" style="padding:.6rem 1.1rem;font-size:.9rem;">🔑 توليد رمز تفعيل جديد</button>
+                    <span class="license-hint">يُولَّد الرمز في الخادم، صالح لاستعمال واحد (سنة كاملة). أرسله للعميل بعد التحقق من التحويل.</span>
+                    <div id="licenseResult" style="display:none;"></div>
+                </div>
                 <div class="toolbar">
                     <input type="text" id="searchInput" placeholder="بحث بالاسم أو البريد الإلكتروني...">
                     <button class="filter-btn active" data-filter="all">الكل</button>
@@ -386,6 +418,28 @@
                 });
             });
             document.getElementById('searchInput').addEventListener('input', renderTable);
+            document.getElementById('genLicenseBtn').addEventListener('click', generateLicense);
+        }
+
+        async function generateLicense() {
+            const btn = document.getElementById('genLicenseBtn');
+            const box = document.getElementById('licenseResult');
+            btn.disabled = true;
+            const { data, error } = await sb.rpc('admin_generate_license');
+            btn.disabled = false;
+
+            if (error || !data) {
+                showToast('تعذّر توليد الرمز : ' + (error ? error.message : 'لا توجد نتيجة') + ' — هل شغّلت schema.sql المحدَّث؟', 'error');
+                return;
+            }
+
+            box.style.display = 'flex';
+            box.innerHTML = `<span class="code" id="licenseCode">${data}</span>
+                             <button class="row-action" id="copyLicenseBtn">نسخ الرمز</button>`;
+            document.getElementById('copyLicenseBtn').addEventListener('click', () => {
+                navigator.clipboard.writeText(data).then(() => showToast('تم نسخ الرمز', 'success'));
+            });
+            try { await navigator.clipboard.writeText(data); showToast('تم توليد الرمز ونسخه', 'success'); } catch (e) { showToast('تم توليد الرمز', 'success'); }
         }
 
         (async () => {
