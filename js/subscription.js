@@ -5,8 +5,8 @@
 // بعد انتهاء الاشتراك يصبح الحساب في "وضع القراءة فقط" :
 //   - في الواجهة : أزرار الإضافة/التعديل/الحذف/الحفظ متوقفة (انظر guardManagers)
 //   - في الخادم  : سياسات RLS في schema.sql ترفض أي كتابة (هذا هو الحاجز الحقيقي)
-// التفعيل يتم برمز ترخيص يتحقق منه الخادم نفسه (دالة activate_license) :
-// سرّ الترخيص لم يعد موجوداً في هذا الملف ولا يصل للمتصفح إطلاقاً.
+// التفعيل يتم برمز ترخيص يولّده الخادم من لوحة admin-panel.html ويتحقق منه الخادم نفسه
+// (دالة activate_license) : سرّ الترخيص موجود في قاعدة البيانات فقط ولا يصل للمتصفح إطلاقاً.
 // -----------------------------------------------------------------------------
 
 const SUBSCRIPTION_CONFIG = {
@@ -103,24 +103,8 @@ class SubscriptionManager {
     }
 
     // ---------- رمز التفعيل ----------
-    // الدالتان التاليتان تستعملهما صفحة activation-keygen.html (أداة المزوّد) فقط،
-    // ويُمرَّر لهما السرّ يدوياً. أما التحقق من الرمز فيتم في الخادم.
-    static checksum(text) {
-        let h = 2166136261;
-        for (let i = 0; i < text.length; i++) {
-            h ^= text.charCodeAt(i);
-            h = Math.imul(h, 16777619) >>> 0;
-        }
-        return h;
-    }
-
-    static buildKey(g1, g2, secret) {
-        if (!secret) throw new Error('السرّ مطلوب لتوليد الرمز');
-        const sum = SubscriptionManager.checksum(`MOAS-${g1}-${g2}-${secret}`);
-        const g3 = sum.toString(36).toUpperCase().slice(-4).padStart(4, '0');
-        return `MOAS-${g1}-${g2}-${g3}`;
-    }
-
+    // توليد الرموز والتحقق منها يتمان كلاهما في الخادم (admin_generate_license / activate_license)،
+    // فلا يوجد أي سرّ أو خوارزمية في هذا الملف.
     // التفعيل : الخادم يتحقق من الرمز ويمنع إعادة استعماله ثم يرقّي الحساب
     async activate(key) {
         const clean = String(key || '').trim();
