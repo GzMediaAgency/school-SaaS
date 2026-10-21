@@ -449,3 +449,8 @@ tbody tr:hover {
         margin: var(--spacing-md) var(--spacing-md) 0;
     }
 }
+
+
+/* ===== الاشتراك المنتهي : صفحات محجوبة في القائمة الجانبية ===== */
+.nav-item--locked { opacity: 0.6; }
+.nav-item--locked .nav-lock { margin-inline-start: auto; font-size: 0.85rem; }
