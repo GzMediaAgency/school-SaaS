@@ -95,26 +95,29 @@ class AIHelper {
         }
 
         // 3. التحليل المالي
-        const totalIncome = finance.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
-        const totalExpense = finance.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
-        const balance = totalIncome - totalExpense;
+        // (محجوب بعد انتهاء الاشتراك : لا نعرض تحليلاً مالياً مبنياً على بيانات غير متاحة)
+        if (!(window.subscription && window.subscription.isExpired())) {
+            const totalIncome = finance.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
+            const totalExpense = finance.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
+            const balance = totalIncome - totalExpense;
 
-        if (balance < 0) {
-            insights.push({
-                icon: '💸',
-                title: 'عجز مالي',
-                message: `المصاريف تتجاوز المداخيل بمقدار ${ui.formatNumber(Math.abs(balance))} دج. يجب مراجعة الميزانية.`,
-                color: 'var(--danger-red)',
-                action: 'finance'
-            });
-        } else {
-            insights.push({
-                icon: '💰',
-                title: 'صحة مالية جيدة',
-                message: `الرصيد الحالي إيجابي بمقدار ${ui.formatNumber(balance)} دج. المؤسسة تتمتع باستقرار مالي.`,
-                color: 'var(--success-green)',
-                action: 'finance'
-            });
+            if (balance < 0) {
+                insights.push({
+                    icon: '💸',
+                    title: 'عجز مالي',
+                    message: `المصاريف تتجاوز المداخيل بمقدار ${ui.formatNumber(Math.abs(balance))} دج. يجب مراجعة الميزانية.`,
+                    color: 'var(--danger-red)',
+                    action: 'finance'
+                });
+            } else {
+                insights.push({
+                    icon: '💰',
+                    title: 'صحة مالية جيدة',
+                    message: `الرصيد الحالي إيجابي بمقدار ${ui.formatNumber(balance)} دج. المؤسسة تتمتع باستقرار مالي.`,
+                    color: 'var(--success-green)',
+                    action: 'finance'
+                });
+            }
         }
 
         // 4. تحليل استيعاب الفصول

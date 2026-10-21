@@ -124,6 +124,13 @@ class AppManager {
             return;
         }
         
+        // بعد انتهاء الاشتراك : المالية والأداءات والإعدادات محجوبة بالكامل
+        const sub = window.subscription;
+        if (sub && sub.isPageLocked(page)) {
+            sub.renderLockedPage(contentArea, page);
+            return;
+        }
+
         switch(page) {
             case 'upgrade':
                 window.location.href = 'payment.html';

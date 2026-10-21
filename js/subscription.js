@@ -5,9 +5,16 @@
 // بعد انتهاء الاشتراك يصبح الحساب في "وضع القراءة فقط" :
 //   - في الواجهة : أزرار الإضافة/التعديل/الحذف/الحفظ متوقفة (انظر guardManagers)
 //   - في الخادم  : سياسات RLS في schema.sql ترفض أي كتابة (هذا هو الحاجز الحقيقي)
-// التفعيل يتم برمز ترخيص يتحقق منه الخادم نفسه (دالة activate_license) :
-// سرّ الترخيص لم يعد موجوداً في هذا الملف ولا يصل للمتصفح إطلاقاً.
+// التفعيل يتم برمز ترخيص يولّده الخادم من لوحة admin-panel.html ويتحقق منه الخادم نفسه
+// (دالة activate_license) : سرّ الترخيص موجود في قاعدة البيانات فقط ولا يصل للمتصفح إطلاقاً.
 // -----------------------------------------------------------------------------
+
+// صفحات محجوبة بالكامل بعد انتهاء الاشتراك (بالإضافة إلى وضع القراءة فقط)
+const LOCKED_PAGES = {
+    finance: 'الإدارة المالية',
+    payments: 'الأداءات',
+    settings: 'الإعدادات'
+};
 
 const SUBSCRIPTION_CONFIG = {
     trialDays: 15,
@@ -103,24 +110,8 @@ class SubscriptionManager {
     }
 
     // ---------- رمز التفعيل ----------
-    // الدالتان التاليتان تستعملهما صفحة activation-keygen.html (أداة المزوّد) فقط،
-    // ويُمرَّر لهما السرّ يدوياً. أما التحقق من الرمز فيتم في الخادم.
-    static checksum(text) {
-        let h = 2166136261;
-        for (let i = 0; i < text.length; i++) {
-            h ^= text.charCodeAt(i);
-            h = Math.imul(h, 16777619) >>> 0;
-        }
-        return h;
-    }
-
-    static buildKey(g1, g2, secret) {
-        if (!secret) throw new Error('السرّ مطلوب لتوليد الرمز');
-        const sum = SubscriptionManager.checksum(`MOAS-${g1}-${g2}-${secret}`);
-        const g3 = sum.toString(36).toUpperCase().slice(-4).padStart(4, '0');
-        return `MOAS-${g1}-${g2}-${g3}`;
-    }
-
+    // توليد الرموز والتحقق منها يتمان كلاهما في الخادم (admin_generate_license / activate_license)،
+    // فلا يوجد أي سرّ أو خوارزمية في هذا الملف.
     // التفعيل : الخادم يتحقق من الرمز ويمنع إعادة استعماله ثم يرقّي الحساب
     async activate(key) {
         const clean = String(key || '').trim();
@@ -154,6 +145,7 @@ class SubscriptionManager {
 
     // ---------- الواجهة ----------
     renderBanner() {
+        this.markLockedNav();
         const host = document.getElementById('subscriptionBanner');
         if (!host) return;
 
@@ -208,6 +200,41 @@ class SubscriptionManager {
         }
     }
 
+    // هل هذه الصفحة محجوبة (اشتراك منتهٍ + صفحة من LOCKED_PAGES) ؟
+    isPageLocked(page) {
+        return this.isExpired() && Object.prototype.hasOwnProperty.call(LOCKED_PAGES, page);
+    }
+
+    // شاشة بديلة تعرض سبب الحجب وزر الترقية
+    renderLockedPage(container, page) {
+        const title = document.querySelector('.header-title');
+        if (title) title.textContent = LOCKED_PAGES[page] || '';
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding:3rem 1.5rem; max-width:560px; margin:2rem auto;">
+                <div style="font-size:3.2rem; margin-bottom:0.75rem;">🔒</div>
+                <h2 style="margin-bottom:0.75rem;">${LOCKED_PAGES[page] || 'هذه الصفحة'} غير متاحة</h2>
+                <p style="color:var(--text-secondary); line-height:1.9; margin-bottom:1.5rem;">
+                    انتهى اشتراكك، لذلك تم حجب صفحات <strong>المالية</strong> و<strong>الأداءات</strong> و<strong>الإعدادات</strong>.
+                    ما زال بإمكانك الاطلاع على الطلبة والأساتذة والفصول والجداول والحضور والنقط.
+                </p>
+                <a class="btn btn-success" href="payment.html" style="text-decoration:none; display:inline-block;">💎 الترقية إلى الباقة الكاملة</a>
+            </div>`;
+    }
+
+    // علامة 🔒 على روابط القائمة الجانبية المحجوبة
+    markLockedNav() {
+        document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+            if (!this.isPageLocked(item.dataset.page)) return;
+            item.classList.add('nav-item--locked');
+            if (!item.querySelector('.nav-lock')) {
+                const lock = document.createElement('span');
+                lock.className = 'nav-lock';
+                lock.textContent = '🔒';
+                item.appendChild(lock);
+            }
+        });
+    }
+
     // وضع القراءة فقط : رسالة قصيرة (الشريط العلوي فيه زر الترقية)
     notifyReadOnly() {
         if (window.ui && typeof ui.showToast === 'function') {
@@ -251,6 +278,22 @@ class SubscriptionManager {
                 guarded.__guarded = true;
                 instance[method] = guarded;
             });
+        });
+
+        // حجب إضافي : دالة render لمدراء المالية والأداءات والإعدادات (أي مسار غير navigateTo)
+        [['financeManager', 'finance'], ['paymentsManager', 'payments'], ['settingsManager', 'settings']].forEach(([name, page]) => {
+            const instance = window[name];
+            if (!instance || typeof instance.render !== 'function' || instance.render.__locked) return;
+            const originalRender = instance.render.bind(instance);
+            const lockedRender = (...args) => {
+                if (this.isPageLocked(page)) {
+                    this.renderLockedPage(document.getElementById('contentArea'), page);
+                    return;
+                }
+                return originalRender(...args);
+            };
+            lockedRender.__locked = true;
+            instance.render = lockedRender;
         });
 
         // زر "إضافة حركة" في المالية يفتح النافذة مباشرة دون المرور بدالة في المدير

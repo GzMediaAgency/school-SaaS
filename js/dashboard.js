@@ -104,10 +104,24 @@ render() {
      this.init();
  }
  init() {
+     const financeLocked = !!(window.subscription && window.subscription.isExpired());
      this.loadStatistics();
-     this.drawBarChart();
+     if (financeLocked) {
+         // اشتراك منتهٍ : البيانات المالية محجوبة، لا نعرض أصفاراً مضلِّلة
+         const lockCard = (title) => `
+             <h3 style="margin-bottom: 1rem;">${title}</h3>
+             <div style="text-align:center; padding:2rem 1rem; color:var(--text-secondary);">
+                 <div style="font-size:2rem; margin-bottom:0.5rem;">🔒</div>
+                 محجوب بعد انتهاء الاشتراك
+             </div>`;
+         document.getElementById('statIncome').textContent = '🔒';
+         this.barChartCanvas.closest('.card').innerHTML = lockCard('المداخيل والمصاريف');
+         document.getElementById('recentFinance').closest('.card').innerHTML = lockCard('آخر الحركات المالية');
+     } else {
+         this.drawBarChart();
+     }
      this.drawPieChart();
-     this.loadRecentFinance();
+     if (!financeLocked) this.loadRecentFinance();
      this.loadRecentStudents();
  }
  loadStatistics() {
